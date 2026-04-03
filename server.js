@@ -1,31 +1,32 @@
 const express = require("express")
 const dotenv = require('dotenv')
 const morgan = require('morgan')
-const mongoose = require('mongoose')
+const dbConnection = require('./config/database')
+const categoryRoute = require('./routes/categoryRoute')
 
 // tell dotenv to actually go find your .env file and load it.
 // .env is the default name, another name would have to use 'path' inside
 dotenv.config() // Actually reads the .env file and pushes those values into process.env.
 
-mongoose.connect(process.env.DB_URI).then((conn) => {
-    console.log(`Database Connected at ${conn.connection.host}`);
-
-}).catch((err) => {
-    console.error(`Database Error: ${err}`)
-    process.exit(1)
-})
+dbConnection()
 
 const app = express()
+
+// Middlewares
+app.use(express.json())
 
 if (process.env.NODE_ENV == 'development') {
     app.use(morgan('dev'))
     console.log(`mode: ${process.env.NODE_ENV}`);
 }
 
-// Routing
+// Mount Routes
+// Add this back in
 app.get("/", (req, res) => {
-    res.send("Hello Server")
-})
+    res.send("Hello Server is running!");
+});
+
+app.use('/api/v1/categories', categoryRoute)
 
 
 const PORT = process.env.PORT || 8000
