@@ -2,7 +2,10 @@ const express = require("express")
 const dotenv = require('dotenv')
 const morgan = require('morgan')
 const dbConnection = require('./config/database')
+
 const categoryRoute = require('./routes/categoryRoute')
+const subCategoryRoute = require('./routes/subCategoryRoute')
+
 const ApiError = require("./utils/ApiError")
 const errorHandlingMiddleware = require("./middlewares/errorHandlingMiddleware")
 
@@ -29,12 +32,10 @@ if (process.env.NODE_ENV == 'development') {
 }
 
 // Mount Routes
-// Add this back in
-app.get("/", (req, res) => {
-    res.send("Hello Server is running!");
-});
 
 app.use('/api/v1/categories', categoryRoute)
+
+app.use('/api/v1/sub-categories', subCategoryRoute)
 
 // If we hit a 'route' that isn't found
 app.all(/(.*)/, (req, res, next) => {
