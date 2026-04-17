@@ -12,7 +12,7 @@ exports.createSubCategoryValidator = [
         .bail()
         .isLength({ min: 3 }).withMessage('Category name is too short')
         .isLength({ max: 32 }).withMessage('Category name is too long'),
-    check('category').notEmpty().withMessage('Category Required')
+    check('categoryId').notEmpty().withMessage('Category Required')
         .bail()
         .isMongoId().escape().withMessage('Invalid Id Format for Category'),
     validatorMiddleware
@@ -20,11 +20,13 @@ exports.createSubCategoryValidator = [
 
 exports.updateSubCategoryValidator = [
     check('id').isMongoId().escape().withMessage('Invalid Id Format'),
-    check('name').optional()
+    check('name').optional().notEmpty().withMessage('Category Can not be Empty')
         .isString().withMessage('Category must be a String')
         .bail()
         .isLength({ min: 3 }).withMessage('Category name is too short')
         .isLength({ max: 32 }).withMessage('Category name is too long'),
-    check('category').optional().isMongoId().escape().withMessage('Invalid Id Format for Category'),
+    check('categoryId').optional().notEmpty().withMessage('Category Required')
+        .bail()
+        .isMongoId().escape().withMessage('Invalid Id Format for Category'),
     validatorMiddleware
 ]

@@ -1,11 +1,11 @@
 const express = require('express')
-const { getSubCategories, createSubCategory, getSubCategory, updateSubCategory, deleteSubCategory } = require('../services/subCategoryService')
+const { getSubCategories, createSubCategory, getSubCategory, updateSubCategory, deleteSubCategory, createFilter } = require('../services/subCategoryService')
 const { createSubCategoryValidator, getSubCategoryValidator, updateSubCategoryValidator, deleteSubCategoryValidator } = require('../validators/subCategoryValidator')
 
-const router = express.Router()
+const router = express.Router({mergeParams: true})
 
 router.route('/')
-    .get(getSubCategories)
+    .get(createFilter, getSubCategories)
     .post(
         createSubCategoryValidator,
         createSubCategory
