@@ -6,6 +6,7 @@ const dbConnection = require('./config/database')
 const categoryRoute = require('./routes/categoryRoute')
 const subCategoryRoute = require('./routes/subCategoryRoute')
 const brandRoute = require('./routes/brandRoute')
+const productRoute = require('./routes/productRoute')
 
 const ApiError = require("./utils/ApiError")
 const errorHandlingMiddleware = require("./middlewares/errorHandlingMiddleware")
@@ -39,6 +40,8 @@ app.use('/api/v1/categories', categoryRoute)
 app.use('/api/v1/sub-categories', subCategoryRoute)
 
 app.use('/api/v1/brands', brandRoute)
+
+app.use('/api/v1/products', productRoute)
 
 // If we hit a 'route' that isn't found
 app.all(/(.*)/, (req, res, next) => {

@@ -16,8 +16,8 @@ const productSchema = new mongoose.Schema(
         },
         category: {
             type: mongoose.Schema.ObjectId,
-            ref: 'Category',
             required: [true, 'Category Required'],
+            ref: 'Category',
         },
         subCategories: [{
             type: mongoose.Schema.ObjectId,
@@ -36,7 +36,10 @@ const productSchema = new mongoose.Schema(
         },
         price: {
             type: Number,
-            required: [true, 'Product Description Required'],
+            required: [true, 'Product Price Required'],
+        },
+        priceAfterDiscount: {
+            type: Number,
         },
         quantity: {
             type: Number,
@@ -63,3 +66,5 @@ const productSchema = new mongoose.Schema(
     },
     { timestamps: true }
 )
+
+module.exports = mongoose.model('Product', productSchema)
