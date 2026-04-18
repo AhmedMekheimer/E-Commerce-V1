@@ -55,9 +55,14 @@ exports.updateBrand = asyncHandler(async (req, res, next) => {
     const { id } = req.params
     const { name } = req.body
 
+    let slug = undefined
+    if (name) {
+        slug = slugify(name)
+    }
+
     const brand = await brandModel.findByIdAndUpdate(
         id,
-        { name, slug: slugify(name) },
+        { name, slug },
         { new: true, runValidators: true }
     )
 

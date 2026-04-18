@@ -1,4 +1,6 @@
 const ProductModel = require('../models/productModel');
+const CategoryModel = require('../models/categoryModel');
+const BrandModel = require('../models/brandModel');
 const slugify = require('slugify');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
@@ -38,10 +40,19 @@ exports.getProduct = asyncHandler(async (req, res, next) => {
 // @desc    Create Product
 // @route   POST /api/v1/products
 // @access  Private
-exports.createProduct = asyncHandler(async (req, res) => {
+exports.createProduct = asyncHandler(async (req, res, next) => {
+    if (!(await CategoryModel.findById(req.body.category))) {
+        return next(new ApiError('Category does not exist', 404))
+    }
+
+    if (!(await BrandModel.findById(req.body.brand))) {
+        return next(new ApiError('Brand does not exist', 404))
+    }
+
     if (req.body.title) {
         req.body.slug = slugify(req.body.title);
     }
+
     const newProduct = await ProductModel.create(req.body);
 
     await newProduct.populate(
@@ -60,6 +71,14 @@ exports.createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/v1/products/:id
 // @access  Private
 exports.updateProduct = asyncHandler(async (req, res, next) => {
+    if (req.body.category && !(await CategoryModel.findById(req.body.category))) {
+        return next(new ApiError('Category does not exist', 404))
+    }
+
+    if (!(await BrandModel.findById(req.body.brand))) {
+        return next(new ApiError('Brand does not exist', 404))
+    }
+
     const { id } = req.params;
     if (req.body.title) {
         req.body.slug = slugify(req.body.title);

@@ -1,7 +1,9 @@
 const subCategoryModel = require('../models/subCategoryModel')
+const CategoryModel = require('../models/categoryModel')
 const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
+const categoryModel = require('../models/categoryModel')
 
 exports.createFilter = (req, res, next) => {
     let filter = {}
@@ -60,13 +62,17 @@ exports.getSubCategory = asyncHandler(async (req, res, next) => {
 // @desc    Create Sub Category
 // @route   POST /api/v1/sub-categories
 // @access  Private
-exports.createSubCategory = asyncHandler(async (req, res) => {
+exports.createSubCategory = asyncHandler(async (req, res, next) => {
     // Nested Route 
     if (!req.body.categoryId) {
         req.body.categoryId = req.params.categoryId
     }
-
     const { name, categoryId } = req.body
+
+    if (!(await categoryModel.findById(categoryId))) {
+        return next(new ApiError('Category does not exist', 404))
+    }
+
 
     const newSubCategory = await subCategoryModel.create({
         name,
@@ -85,12 +91,19 @@ exports.createSubCategory = asyncHandler(async (req, res) => {
 // @route   PUT /api/v1/sub-categories/:id
 // @access  Private
 exports.updateSubCategory = asyncHandler(async (req, res, next) => {
-    const { id } = req.params
     const { name, categoryId } = req.body
+    if (req.body.categoryId && !(await categoryModel.findById(categoryId))) {
+        return next(new ApiError('Category does not exist', 404))
+    }
+    const { id } = req.params
 
+    let slug = undefined
+    if (name) {
+        slug = slugify(name)
+    }
     const subCategory = await subCategoryModel.findByIdAndUpdate(
         id,
-        { name, slug: slugify(name), category: categoryId },
+        { name, slug, category: categoryId },
         { new: true, runValidators: true }
     )
 
