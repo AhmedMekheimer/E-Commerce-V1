@@ -71,6 +71,7 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
         runValidators: true,
     });
 
+    // Will not happen
     if (!product) {
         return next(new ApiError('Product not Found', 404));
     }

@@ -27,7 +27,10 @@ const productSchema = new mongoose.Schema(
             type: mongoose.Schema.ObjectId,
             ref: 'Brand',
         },
-        colors: [String],
+        colors: [{
+            type: String,
+            unique: [true, 'Product color must be unique']
+        }],
         description: {
             type: String,
             required: [true, 'Product Description Required'],

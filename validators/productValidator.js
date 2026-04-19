@@ -4,6 +4,7 @@ const { mongoIdValidator } = require("./commonValidators");
 const subCategoryModel = require("../models/subCategoryModel");
 const categoryModel = require("../models/categoryModel");
 const brandModel = require("../models/brandModel");
+const productModel = require("../models/productModel");
 
 // 1. Define the shared logic in a reusable function
 const productRules = (isUpdate = false) => {
@@ -33,15 +34,44 @@ const productRules = (isUpdate = false) => {
 
         // SUBCATEGORIES (Array + Items)
         check('subCategories')
-            .optional() // Array itself is always optional in this schema
-            .isArray().withMessage('subCategories must be an array'),
-        check('subCategories.*')
             .optional()
-            .isMongoId().escape().withMessage('Invalid Id Format in SubCategories list')
-            .custom(async (subCategory) => {
-                if (!(await subCategoryModel.findById(subCategory))) {
-                    return Promise.reject(new Error(`No sub category found for the is ${subCategory}`))
+            .isArray().withMessage('subCategories must be an array')
+            .customSanitizer((subCategoriesIds) => {
+                // Remove duplicates and return the clean array
+                return [...new Set(subCategoriesIds)];
+            })
+            .custom(async (subCategoriesIds, { req }) => {
+                // Normal Route or Nested Route
+                let categoryId = req.body.category || req.params.categoryId;
+
+                if (!categoryId) {
+                    if (!isUpdate) {
+                        return Promise.reject(new Error("Category is required to validate subCategories when creating a product"));
+                    }
+                    else {
+                        const product = await productModel.findById(req.params.id).select('category').lean()
+                        if (product) {
+                            categoryId = product.category
+                        }
+                        else {
+                            return Promise.reject(new Error("Product Id doesn't exist"));
+                        }
+                    }
                 }
+
+                // We find all subcategories that are actually exist AND belong to the category
+                const validSubCategories = await subCategoryModel.find({
+                    category: categoryId,
+                    _id: { $in: subCategoriesIds }
+                })
+                    .lean();
+
+                // If the number of documents found in the DB is less than the number of IDs sent,
+                // it means at least one subCategoryId either doesn't exist or doesn't belong to this category.
+                if (validSubCategories.length !== subCategoriesIds.length) {
+                    return Promise.reject(new Error(`One or more sub-categories do not belong to the selected category`));
+                }
+
                 return true;
             }),
 
@@ -59,7 +89,11 @@ const productRules = (isUpdate = false) => {
         // COLORS (Array + Items)
         check('colors')
             .optional()
-            .isArray().withMessage('Colors should be an array'),
+            .isArray().withMessage('Colors should be an array')
+            .customSanitizer((colors) => {
+                // Remove duplicates and return the clean array
+                return [...new Set(colors)];
+            }),
         check('colors.*')
             .optional()
             .isString().withMessage('Each color must be a string'),
