@@ -1,9 +1,8 @@
 const subCategoryModel = require('../models/subCategoryModel')
-const CategoryModel = require('../models/categoryModel')
+const categoryModel = require('../models/categoryModel')
 const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
-const categoryModel = require('../models/categoryModel')
 
 exports.createFilter = (req, res, next) => {
     let filter = {}
@@ -64,20 +63,16 @@ exports.getSubCategory = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.createSubCategory = asyncHandler(async (req, res, next) => {
     // Nested Route 
-    if (!req.body.categoryId) {
-        req.body.categoryId = req.params.categoryId
+    if (!req.body.category) {
+        req.body.category = req.params.categoryId
     }
-    const { name, categoryId } = req.body
-
-    if (!(await categoryModel.findById(categoryId))) {
-        return next(new ApiError('Category does not exist', 404))
-    }
+    const { name, category } = req.body
 
 
     const newSubCategory = await subCategoryModel.create({
         name,
         slug: slugify(name),
-        category: categoryId
+        category
     })
 
     await newSubCategory.populate({
@@ -91,10 +86,7 @@ exports.createSubCategory = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/v1/sub-categories/:id
 // @access  Private
 exports.updateSubCategory = asyncHandler(async (req, res, next) => {
-    const { name, categoryId } = req.body
-    if (req.body.categoryId && !(await categoryModel.findById(categoryId))) {
-        return next(new ApiError('Category does not exist', 404))
-    }
+    const { name, category } = req.body
     const { id } = req.params
 
     let slug = undefined
@@ -103,7 +95,7 @@ exports.updateSubCategory = asyncHandler(async (req, res, next) => {
     }
     const subCategory = await subCategoryModel.findByIdAndUpdate(
         id,
-        { name, slug, category: categoryId },
+        { name, slug, category },
         { new: true, runValidators: true }
     )
 

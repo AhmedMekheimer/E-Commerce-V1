@@ -1,6 +1,9 @@
 const { check } = require("express-validator");
 const validatorMiddleware = require("../middlewares/validatorMiddleware");
 const { mongoIdValidator } = require("./commonValidators");
+const subCategoryModel = require("../models/subCategoryModel");
+const categoryModel = require("../models/categoryModel");
+const brandModel = require("../models/brandModel");
 
 // 1. Define the shared logic in a reusable function
 const productRules = (isUpdate = false) => {
@@ -20,7 +23,13 @@ const productRules = (isUpdate = false) => {
 
         // CATEGORY
         applyOptional(check('category').notEmpty().withMessage('Category Required'))
-            .isMongoId().withMessage('Invalid Id Format for Category'),
+            .isMongoId().escape().withMessage('Invalid Id Format for Category')
+            .custom(async (category) => {
+                if (!(await categoryModel.findById(category))) {
+                    return Promise.reject(new Error(`No category found for the id: ${category}`))
+                }
+                return true;
+            }),
 
         // SUBCATEGORIES (Array + Items)
         check('subCategories')
@@ -28,12 +37,24 @@ const productRules = (isUpdate = false) => {
             .isArray().withMessage('subCategories must be an array'),
         check('subCategories.*')
             .optional()
-            .isMongoId().withMessage('Invalid Id Format in SubCategories list'),
+            .isMongoId().escape().withMessage('Invalid Id Format in SubCategories list')
+            .custom(async (subCategory) => {
+                if (!(await subCategoryModel.findById(subCategory))) {
+                    return Promise.reject(new Error(`No sub category found for the is ${subCategory}`))
+                }
+                return true;
+            }),
 
         // BRAND
         check('brand')
             .optional()
-            .isMongoId().withMessage('Invalid Id Format for Brand'),
+            .isMongoId().escape().withMessage('Invalid Id Format for Brand')
+            .custom(async (brand) => {
+                if (!(await brandModel.findById(brand))) {
+                    return Promise.reject(new Error(`No brand found for the id: ${brand}`))
+                }
+                return true;
+            }),
 
         // COLORS (Array + Items)
         check('colors')
@@ -53,7 +74,7 @@ const productRules = (isUpdate = false) => {
             .isNumeric().withMessage('Discount price must be a number')
             .custom((value, { req }) => {
                 if (req.body.price && value >= req.body.price) {
-                    throw new Error('Discount price must be lower than original price');
+                    return Promise.reject(new Error(`Discount price must be lower than original price`))
                 }
                 return true;
             }),
@@ -92,7 +113,7 @@ exports.createProductValidator = [
 
 // For UPDATE: Call rules with true, add the 'id' param check, and the middleware
 exports.updateProductValidator = [
-    check('id').isMongoId().withMessage('Invalid Id Format'),
+    check('id').isMongoId().escape().withMessage('Invalid Id Format'),
     ...productRules(true),
     validatorMiddleware
 ];
