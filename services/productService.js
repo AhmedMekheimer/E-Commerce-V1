@@ -21,7 +21,6 @@ exports.getProducts = asyncHandler(async (req, res) => {
     let filtersStr = JSON.stringify(filtersObj)
     filtersStr = filtersStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
     filtersObj = JSON.parse(filtersStr)
-    console.log(filtersObj);
 
     // 2. Pagination
     const page = Number(req.query.page) || 1;
@@ -43,6 +42,27 @@ exports.getProducts = asyncHandler(async (req, res) => {
     }
     else {
         mongooseQuery.sort('-createdAt')
+    }
+
+    // 4. Field limiting/choosing
+    if (req.query.fields) {
+        let fields = req.query.fields.split(',').join(' ')
+        mongooseQuery.select(fields)
+    }
+    else {
+        mongooseQuery.select('-__v')
+    }
+
+    // 5. Searching a keyword in title & desc
+    if (req.query.keyword) {
+        let search = {}
+        // $options:'i' not case sensitive
+        search.$or = [
+            { title: { $regex: req.query.keyword, $options: 'i' } },
+            { description: { $regex: req.query.keyword, $options: 'i' } }
+        ]
+        
+        mongooseQuery.find(search)
     }
 
     // Execute Query
