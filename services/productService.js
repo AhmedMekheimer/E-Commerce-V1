@@ -2,20 +2,51 @@ const ProductModel = require('../models/productModel');
 const slugify = require('slugify');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
+const { json } = require('node:stream/consumers');
 
 // @desc    Get List of Products
 // @route   GET /api/v1/products
 // @access  Public
 exports.getProducts = asyncHandler(async (req, res) => {
+    // 1. Filtration
+    // 1st: Only have the fields to filter on 
+    let filtersObj = { ...req.query }
+    const excludedFields = ['page', 'sort', 'limit', 'fields']
+    excludedFields.forEach((field) => {
+        delete filtersObj[field]
+    })
+
+    // Adding '$' operator in the query string
+    // Note: Needed to add the extended query parser in the server
+    let filtersStr = JSON.stringify(filtersObj)
+    filtersStr = filtersStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    filtersObj = JSON.parse(filtersStr)
+    console.log(filtersObj);
+
+    // 2. Pagination
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
-    const products = await ProductModel.find({})
+    // Building the mongoose query
+    const mongooseQuery = ProductModel.find(filtersObj)
         .skip(skip)
         .limit(limit)
         .populate({ path: 'category', select: 'name -_id' })
         .populate({ path: 'brand', select: 'name -_id' });
+
+    // 3. Sorting
+    if (req.query.sort) {
+        // ?sort=price,-soldCounter -> price,-soldCounter -> price -soldCounter
+        let sortBy = req.query.sort.split(',').join(' ')
+        mongooseQuery.sort(sortBy)
+    }
+    else {
+        mongooseQuery.sort('-createdAt')
+    }
+
+    // Execute Query
+    const products = await mongooseQuery
 
     res.status(201).json({ results: products.length, page, data: products });
 });

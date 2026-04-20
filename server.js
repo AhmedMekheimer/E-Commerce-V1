@@ -25,6 +25,9 @@ dbConnection()
 
 const app = express()
 
+// This ensures that nested query parameters like [gte] are parsed into objects
+app.set('query parser', 'extended');
+
 // Middlewares
 app.use(express.json())
 
