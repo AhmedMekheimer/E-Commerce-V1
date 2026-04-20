@@ -24,7 +24,9 @@ const productRules = (isUpdate = false) => {
 
         // CATEGORY
         applyOptional(check('category').notEmpty().withMessage('Category Required'))
+            .bail()
             .isMongoId().escape().withMessage('Invalid Id Format for Category')
+            .bail()
             .custom(async (category) => {
                 if (!(await categoryModel.findById(category))) {
                     return Promise.reject(new Error(`No category found for the id: ${category}`))
@@ -42,7 +44,7 @@ const productRules = (isUpdate = false) => {
             })
             .custom(async (subCategoriesIds, { req }) => {
                 // Normal Route or Nested Route
-                let categoryId = req.body.category || req.params.categoryId;
+                let categoryId = req.body.category
 
                 if (!categoryId) {
                     if (!isUpdate) {
