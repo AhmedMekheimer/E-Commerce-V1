@@ -3,72 +3,30 @@ const slugify = require('slugify');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
 const { json } = require('node:stream/consumers');
+const ApiFeatures = require('../utils/apiFeatures');
 
 // @desc    Get List of Products
 // @route   GET /api/v1/products
 // @access  Public
 exports.getProducts = asyncHandler(async (req, res) => {
-    // 1. Filtration
-    // 1st: Only have the fields to filter on 
-    let filtersObj = { ...req.query }
-    const excludedFields = ['page', 'sort', 'limit', 'fields']
-    excludedFields.forEach((field) => {
-        delete filtersObj[field]
-    })
-
-    // Adding '$' operator in the query string
-    // Note: Needed to add the extended query parser in the server
-    let filtersStr = JSON.stringify(filtersObj)
-    filtersStr = filtersStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-    filtersObj = JSON.parse(filtersStr)
-
-    // 2. Pagination
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 5;
-    const skip = (page - 1) * limit;
 
     // Building the mongoose query
-    const mongooseQuery = ProductModel.find(filtersObj)
-        .skip(skip)
-        .limit(limit)
+    const mongooseQuery = ProductModel.find()
+    let apiFeatures = new ApiFeatures(mongooseQuery, req.query)
+
+    apiFeatures
+        .filter()
+        .sort()
+        .fieldLimit()
+        .search()
+        .paginate()
+
+    // Execute Query
+    const products = await apiFeatures.mongooseQuery
         .populate({ path: 'category', select: 'name -_id' })
         .populate({ path: 'brand', select: 'name -_id' });
 
-    // 3. Sorting
-    if (req.query.sort) {
-        // ?sort=price,-soldCounter -> price,-soldCounter -> price -soldCounter
-        let sortBy = req.query.sort.split(',').join(' ')
-        mongooseQuery.sort(sortBy)
-    }
-    else {
-        mongooseQuery.sort('-createdAt')
-    }
-
-    // 4. Field limiting/choosing
-    if (req.query.fields) {
-        let fields = req.query.fields.split(',').join(' ')
-        mongooseQuery.select(fields)
-    }
-    else {
-        mongooseQuery.select('-__v')
-    }
-
-    // 5. Searching a keyword in title & desc
-    if (req.query.keyword) {
-        let search = {}
-        // $options:'i' not case sensitive
-        search.$or = [
-            { title: { $regex: req.query.keyword, $options: 'i' } },
-            { description: { $regex: req.query.keyword, $options: 'i' } }
-        ]
-        
-        mongooseQuery.find(search)
-    }
-
-    // Execute Query
-    const products = await mongooseQuery
-
-    res.status(201).json({ results: products.length, page, data: products });
+    res.status(201).json({ results: products.length, data: products });
 });
 
 // @desc    Get Specific Product
