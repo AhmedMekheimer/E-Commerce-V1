@@ -7,17 +7,19 @@ class ApiFeatures {
     filter() {
         // 1st: Only have the fields to filter on 
         let filtersObj = { ...this.queryString }
-        const excludedFields = ['page', 'sort', 'limit', 'fields']
+        const excludedFields = ['page', 'sort', 'limit', 'fields', 'keyword']
         excludedFields.forEach((field) => {
             delete filtersObj[field]
         })
 
-        // Adding '$' operator in the query string
-        // Note: Needed to add the extended query parser in the server
-        let filtersStr = JSON.stringify(filtersObj)
-        filtersStr = filtersStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+        if (Object.keys(filtersObj).length > 0) {
+            // Adding '$' operator in the query string
+            // Note: Needed to add the extended query parser in the server
+            let filtersStr = JSON.stringify(filtersObj)
+            filtersStr = filtersStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-        this.mongooseQuery = this.mongooseQuery.find(JSON.parse(filtersStr))
+            this.mongooseQuery = this.mongooseQuery.find(JSON.parse(filtersStr))
+        }
         return this
     }
 
@@ -49,6 +51,7 @@ class ApiFeatures {
     search() {
         if (this.queryString.keyword) {
             let search = {}
+
             // $options:'i' not case sensitive
             search.$or = [
                 { title: { $regex: this.queryString.keyword, $options: 'i' } },

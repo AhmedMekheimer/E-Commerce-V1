@@ -15,11 +15,11 @@ exports.getProducts = asyncHandler(async (req, res) => {
     let apiFeatures = new ApiFeatures(mongooseQuery, req.query)
 
     apiFeatures
+        .search()
         .filter()
+        .paginate()
         .sort()
         .fieldLimit()
-        .search()
-        .paginate()
 
     // Execute Query
     const products = await apiFeatures.mongooseQuery
