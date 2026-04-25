@@ -1,8 +1,9 @@
-const subCategoryModel = require('../models/subCategoryModel')
-const categoryModel = require('../models/categoryModel')
+const SubCategoryModel = require('../models/subCategoryModel')
+const CategoryModel = require('../models/categoryModel')
 const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
+const ApiFeatures = require('../utils/apiFeatures')
 
 exports.createFilter = (req, res, next) => {
     let filter = {}
@@ -21,20 +22,28 @@ exports.createFilter = (req, res, next) => {
 // @route   GET /api/v1/sub-categories
 // @access  Public
 exports.getSubCategories = asyncHandler(async (req, res) => {
-    const page = Number(req.query.page)
-    const limit = Number(req.query.limit)
+    // Building the mongoose query
+    let apiFeatures = new ApiFeatures(SubCategoryModel.find(), req.query)
+    apiFeatures
+        .search()
+        .filter()
 
-    const skip = (page - 1) * limit
+    // Counting after filters by executing a 'Cloned' query
+    const countDocuments = await apiFeatures.mongooseQuery.clone().countDocuments()
 
-    const subCategories = await subCategoryModel.find(req.filter)
-        .skip(skip)
-        .limit(limit)
-        .populate({
-            path: 'category',
-            select: 'name -_id'
-        })
+    // Continue
+    apiFeatures
+        .sort()
+        .fieldLimit()
+        .paginate(countDocuments)
 
-    res.status(201).json({ data: subCategories })
+    const { mongooseQuery, paginationResult } = apiFeatures
+
+    // Execute Original Query
+    let subCategories = await mongooseQuery
+        .populate({ path: 'category', select: 'name -_id' })
+
+    res.status(201).json({ paginationResult, TotalNumOfProducts: countDocuments, results: subCategories.length, data: subCategories });
 })
 
 // @desc    Get Sub Category
@@ -43,7 +52,7 @@ exports.getSubCategories = asyncHandler(async (req, res) => {
 exports.getSubCategory = asyncHandler(async (req, res, next) => {
     const { id } = req.params
 
-    const subCategory = await subCategoryModel.findById(id).populate({
+    const subCategory = await SubCategoryModel.findById(id).populate({
         path: 'category',
         select: 'name -_id'
     })
@@ -69,7 +78,7 @@ exports.createSubCategory = asyncHandler(async (req, res, next) => {
     const { name, category } = req.body
 
 
-    const newSubCategory = await subCategoryModel.create({
+    const newSubCategory = await SubCategoryModel.create({
         name,
         slug: slugify(name),
         category
@@ -93,7 +102,7 @@ exports.updateSubCategory = asyncHandler(async (req, res, next) => {
     if (name) {
         slug = slugify(name)
     }
-    const subCategory = await subCategoryModel.findByIdAndUpdate(
+    const subCategory = await SubCategoryModel.findByIdAndUpdate(
         id,
         { name, slug, category },
         { new: true, runValidators: true }
@@ -115,7 +124,7 @@ exports.updateSubCategory = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.deleteSubCategory = asyncHandler(async (req, res, next) => {
     const { id } = req.params
-    const deletedSubCategory = await subCategoryModel.findByIdAndDelete(id)
+    const deletedSubCategory = await SubCategoryModel.findByIdAndDelete(id)
 
     if (!deletedSubCategory) {
         return next(new ApiError('Sub Category not Found', 404))

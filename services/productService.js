@@ -13,7 +13,7 @@ exports.getProducts = asyncHandler(async (req, res) => {
     // Building the mongoose query
     let apiFeatures = new ApiFeatures(ProductModel.find(), req.query)
     apiFeatures
-        .search()
+        .search('products')
         .filter()
 
     // Counting after filters by executing a 'Cloned' query
@@ -31,7 +31,6 @@ exports.getProducts = asyncHandler(async (req, res) => {
     let products = await mongooseQuery
         .populate({ path: 'category', select: 'name -_id' })
         .populate({ path: 'brand', select: 'name -_id' });
-
 
     res.status(201).json({ paginationResult, TotalNumOfProducts: countDocuments, results: products.length, data: products });
 });

@@ -1,23 +1,34 @@
 const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
-const brandModel = require('../models/brandModel')
+const BrandModel = require('../models/brandModel')
+const ApiFeatures = require('../utils/apiFeatures')
 
 // @desc    Get Brands
 // @route   GET /api/v1/brands
 // @access  Public
 exports.getBrands = asyncHandler(async (req, res) => {
-    // Using Params tab in Post Man (NEW)
-    const page = Number(req.query.page)
-    const limit = Number(req.query.limit)
+    // Building the mongoose query
+    let apiFeatures = new ApiFeatures(BrandModel.find(), req.query)
+    apiFeatures
+        .search()
+        .filter()
 
-    const skip = (page - 1) * limit
+    // Counting after filters by executing a 'Cloned' query
+    const countDocuments = await apiFeatures.mongooseQuery.clone().countDocuments()
 
-    const brands = await brandModel.find()
-        .skip(skip)
-        .limit(limit)
+    // Continue
+    apiFeatures
+        .sort()
+        .fieldLimit()
+        .paginate(countDocuments)
 
-    res.status(201).json({ data: brands })
+    const { mongooseQuery, paginationResult } = apiFeatures
+
+    // Execute Original Query
+    let brands = await mongooseQuery
+
+    res.status(201).json({ paginationResult, TotalNumOfProducts: countDocuments, results: brands.length, data: brands });
 })
 
 // @desc    Get Brand
@@ -26,7 +37,7 @@ exports.getBrands = asyncHandler(async (req, res) => {
 exports.getBrand = asyncHandler(async (req, res, next) => {
     const { id } = req.params
 
-    const brand = await brandModel.findById(id)
+    const brand = await BrandModel.findById(id)
 
     if (!brand) {
         return next(new ApiError('brand not Found', 404))
@@ -40,7 +51,7 @@ exports.getBrand = asyncHandler(async (req, res, next) => {
 exports.createBrand = asyncHandler(async (req, res) => {
     const name = req.body.name
 
-    const newBrand = await brandModel.create({
+    const newBrand = await BrandModel.create({
         name,
         slug: slugify(name)
     })
@@ -60,7 +71,7 @@ exports.updateBrand = asyncHandler(async (req, res, next) => {
         slug = slugify(name)
     }
 
-    const brand = await brandModel.findByIdAndUpdate(
+    const brand = await BrandModel.findByIdAndUpdate(
         id,
         { name, slug },
         { new: true, runValidators: true }
@@ -78,7 +89,7 @@ exports.updateBrand = asyncHandler(async (req, res, next) => {
 // @access  Private
 exports.deleteBrand = asyncHandler(async (req, res, next) => {
     const { id } = req.params
-    const deletedBrand = await brandModel.findByIdAndDelete(id)
+    const deletedBrand = await BrandModel.findByIdAndDelete(id)
 
     if (!deletedBrand) {
         return next(new ApiError('Brand not Found', 404))

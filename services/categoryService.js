@@ -2,22 +2,33 @@ const CategoryModel = require('../models/categoryModel')
 const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
+const ApiFeatures = require('../utils/apiFeatures')
 
 // @desc    Get Categories
 // @route   GET /api/v1/categories
 // @access  Public
 exports.getCategories = asyncHandler(async (req, res) => {
-    // Using Params tab in Post Man (NEW)
-    const page = Number(req.query.page)
-    const limit = Number(req.query.limit)
+    // Building the mongoose query
+    let apiFeatures = new ApiFeatures(CategoryModel.find(), req.query)
+    apiFeatures
+        .search()
+        .filter()
 
-    const skip = (page - 1) * limit
+    // Counting after filters by executing a 'Cloned' query
+    const countDocuments = await apiFeatures.mongooseQuery.clone().countDocuments()
 
-    const categories = await CategoryModel.find()
-        .skip(skip)
-        .limit(limit)
+    // Continue
+    apiFeatures
+        .sort()
+        .fieldLimit()
+        .paginate(countDocuments)
 
-    res.status(201).json({ data: categories })
+    const { mongooseQuery, paginationResult } = apiFeatures
+
+    // Execute Original Query
+    let categories = await mongooseQuery
+
+    res.status(201).json({ paginationResult, TotalNumOfProducts: countDocuments, results: categories.length, data: categories });
 })
 
 // @desc    Get Category
@@ -62,7 +73,7 @@ exports.updateCategory = asyncHandler(async (req, res, next) => {
 
     const category = await CategoryModel.findByIdAndUpdate(
         id,
-        { name, slug},
+        { name, slug },
         { new: true, runValidators: true }
     )
 

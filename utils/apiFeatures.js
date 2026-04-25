@@ -48,15 +48,22 @@ class ApiFeatures {
         return this
     }
 
-    search() {
+    search(modelName) {
         if (this.queryString.keyword) {
             let search = {}
 
             // $options:'i' not case sensitive
-            search.$or = [
-                { title: { $regex: this.queryString.keyword, $options: 'i' } },
-                { description: { $regex: this.queryString.keyword, $options: 'i' } }
-            ]
+            if (modelName === 'products') {
+                search.$or = [
+                    { title: { $regex: this.queryString.keyword, $options: 'i' } },
+                    { description: { $regex: this.queryString.keyword, $options: 'i' } }
+                ]
+            }
+            else {
+                search.$or = [
+                    { name: { $regex: this.queryString.keyword, $options: 'i' } },
+                ]
+            }
 
             this.mongooseQuery = this.mongooseQuery.find(search)
         }
