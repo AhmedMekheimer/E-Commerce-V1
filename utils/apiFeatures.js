@@ -64,10 +64,25 @@ class ApiFeatures {
         return this
     }
 
-    paginate() {
+    paginate(countDocuments) {
         const page = Number(this.queryString.page) || 1;
         const limit = Number(this.queryString.limit) || 5;
         const skip = (page - 1) * limit;
+
+        let pagination = {}
+        pagination.numOfPages = Math.ceil(countDocuments / limit)
+        pagination.currentPage = page
+        pagination.limit = limit
+
+        if (page < pagination.numOfPages) {
+            pagination.next = page + 1
+        }
+
+        if (page > 1) {
+            pagination.prev = page - 1
+        }
+
+        this.paginationResult = pagination
         this.mongooseQuery = this.mongooseQuery.skip(skip).limit(limit)
 
         return this

@@ -11,22 +11,29 @@ const ApiFeatures = require('../utils/apiFeatures');
 exports.getProducts = asyncHandler(async (req, res) => {
 
     // Building the mongoose query
-    const mongooseQuery = ProductModel.find()
-    let apiFeatures = new ApiFeatures(mongooseQuery, req.query)
-
+    let apiFeatures = new ApiFeatures(ProductModel.find(), req.query)
     apiFeatures
         .search()
         .filter()
-        .paginate()
+
+    // Counting after filters by executing a 'Cloned' query
+    const countDocuments = await apiFeatures.mongooseQuery.clone().countDocuments()
+
+    // Continue
+    apiFeatures
         .sort()
         .fieldLimit()
+        .paginate(countDocuments)
 
-    // Execute Query
-    const products = await apiFeatures.mongooseQuery
+    const { mongooseQuery, paginationResult } = apiFeatures
+
+    // Execute Original Query
+    let products = await mongooseQuery
         .populate({ path: 'category', select: 'name -_id' })
         .populate({ path: 'brand', select: 'name -_id' });
 
-    res.status(201).json({ results: products.length, data: products });
+
+    res.status(201).json({ paginationResult, TotalNumOfProducts: countDocuments, results: products.length, data: products });
 });
 
 // @desc    Get Specific Product
