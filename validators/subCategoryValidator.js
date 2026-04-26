@@ -1,7 +1,8 @@
-const { check } = require("express-validator");
+const { check, body } = require("express-validator");
 const validatorMiddleware = require("../middlewares/validatorMiddleware");
 const { mongoIdValidator } = require("./commonValidators");
 const categoryModel = require("../models/categoryModel");
+const slugify = require('slugify')
 
 const subCategoryRules = (isUpdate = false) => {
     const applyOptional = (rule) => (isUpdate ? rule.optional() : rule);
@@ -13,7 +14,7 @@ const subCategoryRules = (isUpdate = false) => {
             .isString().withMessage('Category must be a String')
             .isLength({ min: 3 }).withMessage('Category name is too short')
             .isLength({ max: 32 }).withMessage('Category name is too long'),
-        
+
         // CATEGORY ID
         applyOptional(check('category').notEmpty().withMessage('Category Required'))
             .isMongoId().escape().withMessage('Invalid Id Format for Category')
@@ -37,6 +38,10 @@ exports.createSubCategoryValidator = [
 
 exports.updateSubCategoryValidator = [
     check('id').isMongoId().escape().withMessage('Invalid Id Format'),
+    body('name').custom((val, { req }) => {
+        req.body.slug = slugify(val)
+        return true
+    }),
     ...subCategoryRules(true),
     validatorMiddleware
 ];

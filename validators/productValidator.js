@@ -1,10 +1,11 @@
-const { check } = require("express-validator");
+const { check, body } = require("express-validator");
 const validatorMiddleware = require("../middlewares/validatorMiddleware");
 const { mongoIdValidator } = require("./commonValidators");
 const subCategoryModel = require("../models/subCategoryModel");
 const categoryModel = require("../models/categoryModel");
 const brandModel = require("../models/brandModel");
 const productModel = require("../models/productModel");
+const slugify = require('slugify')
 
 // 1. Define the shared logic in a reusable function
 const productRules = (isUpdate = false) => {
@@ -150,6 +151,10 @@ exports.createProductValidator = [
 // For UPDATE: Call rules with true, add the 'id' param check, and the middleware
 exports.updateProductValidator = [
     check('id').isMongoId().escape().withMessage('Invalid Id Format'),
+    body('title').custom((val, { req }) => {
+        req.body.slug = slugify(val)
+        return true
+    }),
     ...productRules(true),
     validatorMiddleware
 ];

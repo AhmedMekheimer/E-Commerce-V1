@@ -4,7 +4,7 @@ const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
 const ApiFeatures = require('../utils/apiFeatures')
-const { deleteOneFactory } = require('./handlersFactory')
+const { deleteOneFactory, updateOneFactory } = require('./handlersFactory')
 
 exports.createFilter = (req, res, next) => {
     let filter = {}
@@ -95,30 +95,7 @@ exports.createSubCategory = asyncHandler(async (req, res, next) => {
 // @desc    Update Sub Category
 // @route   PUT /api/v1/sub-categories/:id
 // @access  Private
-exports.updateSubCategory = asyncHandler(async (req, res, next) => {
-    const { name, category } = req.body
-    const { id } = req.params
-
-    let slug = undefined
-    if (name) {
-        slug = slugify(name)
-    }
-    const subCategory = await SubCategoryModel.findByIdAndUpdate(
-        id,
-        { name, slug, category },
-        { new: true, runValidators: true }
-    )
-
-    if (!subCategory) {
-        return next(new ApiError('Sub Category not Found', 404))
-    }
-
-    await subCategory.populate({
-        path: 'category',
-        select: 'name -_id'
-    })
-    res.status(201).json({ data: subCategory })
-})
+exports.updateSubCategory = updateOneFactory(SubCategoryModel)
 
 // @desc    Delete Sub Category
 // @route   DELETE /api/v1/sub-categories/:id

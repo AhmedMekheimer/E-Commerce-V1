@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
 const ApiFeatures = require('../utils/apiFeatures');
 const { json } = require('node:stream/consumers');
-const { deleteOneFactory } = require('./handlersFactory');
+const { deleteOneFactory, updateOneFactory } = require('./handlersFactory');
 
 // @desc    Get List of Products
 // @route   GET /api/v1/products
@@ -76,23 +76,7 @@ exports.createProduct = asyncHandler(async (req, res, next) => {
 // @desc    Update Product
 // @route   PUT /api/v1/products/:id
 // @access  Private
-exports.updateProduct = asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
-    if (req.body.title) {
-        req.body.slug = slugify(req.body.title);
-    }
-
-    const product = await ProductModel.findByIdAndUpdate(id, req.body, {
-        new: true,
-        runValidators: true,
-    });
-
-    // Will not happen
-    if (!product) {
-        return next(new ApiError('Product not Found', 404));
-    }
-    res.status(201).json({ data: product });
-});
+exports.updateProduct = updateOneFactory(ProductModel)
 
 // @desc    Delete Product
 // @route   DELETE /api/v1/products/:id

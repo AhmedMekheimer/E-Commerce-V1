@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
 const BrandModel = require('../models/brandModel')
 const ApiFeatures = require('../utils/apiFeatures')
-const { deleteOneFactory } = require('./handlersFactory')
+const { deleteOneFactory, updateOneFactory } = require('./handlersFactory')
 
 // @desc    Get Brands
 // @route   GET /api/v1/brands
@@ -63,27 +63,7 @@ exports.createBrand = asyncHandler(async (req, res) => {
 // @desc    Update Brand
 // @route   PUT /api/v1/brands/:id
 // @access  Private
-exports.updateBrand = asyncHandler(async (req, res, next) => {
-    const { id } = req.params
-    const { name } = req.body
-
-    let slug = undefined
-    if (name) {
-        slug = slugify(name)
-    }
-
-    const brand = await BrandModel.findByIdAndUpdate(
-        id,
-        { name, slug },
-        { new: true, runValidators: true }
-    )
-
-    if (!brand) {
-        return next(new ApiError('brand not Found', 404))
-    }
-
-    res.status(201).json({ data: brand })
-})
+exports.updateBrand = updateOneFactory(BrandModel)
 
 // @desc    Delete brand
 // @route   DELETE /api/v1/brands/:id

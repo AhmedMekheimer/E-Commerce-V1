@@ -3,7 +3,7 @@ const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
 const ApiFeatures = require('../utils/apiFeatures')
-const { deleteOneFactory } = require('./handlersFactory')
+const { deleteOneFactory, updateOneFactory } = require('./handlersFactory')
 
 // @desc    Get Categories
 // @route   GET /api/v1/categories
@@ -63,27 +63,7 @@ exports.createCategory = asyncHandler(async (req, res) => {
 // @desc    Update Category
 // @route   PUT /api/v1/categories/:id
 // @access  Private
-exports.updateCategory = asyncHandler(async (req, res, next) => {
-    const { id } = req.params
-    const { name } = req.body
-
-    let slug = undefined
-    if (name) {
-        slug = slugify(name)
-    }
-
-    const category = await CategoryModel.findByIdAndUpdate(
-        id,
-        { name, slug },
-        { new: true, runValidators: true }
-    )
-
-    if (!category) {
-        return next(new ApiError('Category not Found', 404))
-    }
-
-    res.status(201).json({ data: category })
-})
+exports.updateCategory = updateOneFactory(CategoryModel)
 
 // @desc    Delete Category
 // @route   DELETE /api/v1/categories/:id
