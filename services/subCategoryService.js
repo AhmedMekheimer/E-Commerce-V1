@@ -4,6 +4,7 @@ const slugify = require('slugify')
 const asyncHandler = require('express-async-handler')
 const ApiError = require('../utils/ApiError')
 const ApiFeatures = require('../utils/apiFeatures')
+const { deleteOneFactory } = require('./handlersFactory')
 
 exports.createFilter = (req, res, next) => {
     let filter = {}
@@ -122,13 +123,4 @@ exports.updateSubCategory = asyncHandler(async (req, res, next) => {
 // @desc    Delete Sub Category
 // @route   DELETE /api/v1/sub-categories/:id
 // @access  Private
-exports.deleteSubCategory = asyncHandler(async (req, res, next) => {
-    const { id } = req.params
-    const deletedSubCategory = await SubCategoryModel.findByIdAndDelete(id)
-
-    if (!deletedSubCategory) {
-        return next(new ApiError('Sub Category not Found', 404))
-    }
-
-    res.status(201).json({ Msg: "Sub Category deleted Successfully" })
-})
+exports.deleteSubCategory = deleteOneFactory(SubCategoryModel)

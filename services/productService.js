@@ -2,8 +2,9 @@ const ProductModel = require('../models/productModel');
 const slugify = require('slugify');
 const asyncHandler = require('express-async-handler');
 const ApiError = require('../utils/ApiError');
-const { json } = require('node:stream/consumers');
 const ApiFeatures = require('../utils/apiFeatures');
+const { json } = require('node:stream/consumers');
+const { deleteOneFactory } = require('./handlersFactory');
 
 // @desc    Get List of Products
 // @route   GET /api/v1/products
@@ -96,12 +97,4 @@ exports.updateProduct = asyncHandler(async (req, res, next) => {
 // @desc    Delete Product
 // @route   DELETE /api/v1/products/:id
 // @access  Private
-exports.deleteProduct = asyncHandler(async (req, res, next) => {
-    const { id } = req.params;
-    const deletedProduct = await ProductModel.findByIdAndDelete(id);
-
-    if (!deletedProduct) {
-        return next(new ApiError('Product not Found', 404));
-    }
-    res.status(201).json({ msg: "Product deleted Successfully" });
-});
+exports.deleteProduct = deleteOneFactory(ProductModel)
